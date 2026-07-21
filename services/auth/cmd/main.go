@@ -7,6 +7,7 @@ import (
 
 	authv1 "github.com/dollarino1/ticketwave/gen/ticketwave/auth/v1"
 	"github.com/dollarino1/ticketwave/pkg/config"
+	"github.com/dollarino1/ticketwave/pkg/postgres"
 	appconfig "github.com/dollarino1/ticketwave/services/auth/internal/config"
 	"github.com/dollarino1/ticketwave/services/auth/internal/server"
 	"google.golang.org/grpc"
@@ -18,14 +19,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
+	ctx := context.Background()
+
+	pool, err := postgres.New(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer pool.Close()
+	log.Println("Connected to database")
+
 	var lc net.ListenConfig
-	lis, err := lc.Listen(context.Background(), "tcp", cfg.GRPCPort)
+	lis, err := lc.Listen(ctx, "tcp", cfg.GRPCPort)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
 	grpcServer := grpc.NewServer()
-	authv1.RegisterAuthServiceServer(grpcServer, server.New())
+	authv1.RegisterAuthServiceServer(grpcServer, server.New(pool))
 	reflection.Register(grpcServer)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
