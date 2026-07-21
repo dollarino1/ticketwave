@@ -3,6 +3,8 @@ module github.com/dollarino1/ticketwave
 go 1.26.5
 
 require (
+	github.com/caarlos0/env/v11 v11.4.1
+	github.com/joho/godotenv v1.5.1
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
 )
