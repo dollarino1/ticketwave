@@ -95,9 +95,77 @@ func (s *Server) Login(ctx context.Context, req *authv1.LoginRequest) (*authv1.L
 }
 
 func (s *Server) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*authv1.RefreshResponse, error) {
+	hash := sha256.Sum256([]byte(req.RefreshToken))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("start transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var tokenID, userID uuid.UUID
+	var revoked bool
+	var expiresAt time.Time
+	err = tx.QueryRow(ctx,
+		`SELECT id, user_id, revoked, expires_at FROM refresh_tokens WHERE token_hash = $1`,
+		tokenHash).Scan(&tokenID, &userID, &revoked, &expiresAt)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "Invalid refresh token")
+	}
+	if revoked {
+		_, err = tx.Exec(ctx, `UPDATE refresh_tokens SET revoked = true WHERE user_id = $1`, userID)
+		if err != nil {
+			return nil, fmt.Errorf("revoke all tokens: %w", err)
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("commit transaction: %w", err)
+		}
+		return nil, status.Error(codes.Unauthenticated, "Invalid refresh token")
+	}
+	if time.Now().After(expiresAt) {
+		return nil, status.Error(codes.Unauthenticated, "Refresh token expired")
+	}
+
+	_, err = tx.Exec(ctx, `UPDATE refresh_tokens SET revoked = true WHERE id = $1`, tokenID)
+	if err != nil {
+		return nil, fmt.Errorf("revoke token: %w", err)
+	}
+
+	var email string
+	err = tx.QueryRow(ctx, `SELECT email FROM users WHERE id = $1`, userID).Scan(&email)
+	if err != nil {
+		return nil, fmt.Errorf("lookup user: %w", err)
+	}
+
+	accessToken, err := s.signer.Sign(userID.String(), email, accessTokenTTL)
+	if err != nil {
+		return nil, fmt.Errorf("sign access token: %w", err)
+	}
+
+	rawBytes := make([]byte, 32)
+	if _, err := rand.Read(rawBytes); err != nil {
+		return nil, fmt.Errorf("generate refresh token: %w", err)
+	}
+	newRawToken := base64.RawURLEncoding.EncodeToString(rawBytes)
+	newHash := sha256.Sum256([]byte(newRawToken))
+	newTokenHash := hex.EncodeToString(newHash[:])
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at) VALUES ($1, $2, $3, $4)`,
+		uuid.New(), userID, newTokenHash, time.Now().Add(refreshTokenTTL),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("insert refresh token: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
+
 	return &authv1.RefreshResponse{
-		AccessToken:  "ACc test",
-		RefreshToken: "ref test",
-		ExpiresIn:    0,
+		AccessToken:  accessToken,
+		RefreshToken: newRawToken,
+		ExpiresIn:    int64(accessTokenTTL.Seconds()),
 	}, nil
 }
