@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package ticketwave.inventory.v1;
+
+service InventoryService {
+  rpc CreateEvent(CreateEventRequest) returns (CreateEventResponse);
+  rpc ListSeats(ListSeatsRequest) returns (ListSeatsResponse);
+  rpc ReserveSeats(ReserveSeatsRequest) returns (ReserveSeatsResponse);
+  rpc ConfirmSeats(ConfirmSeatsRequest) returns (ConfirmSeatsResponse);
+  rpc ReleaseSeats(ReleaseSeatsRequest) returns (ReleaseSeatsResponse);
+}
+
+enum SeatStatus {
+  SEAT_STATUS_UNSPECIFIED = 0;
+  SEAT_STATUS_AVAILABLE = 1;
+  SEAT_STATUS_HELD = 2;
+  SEAT_STATUS_SOLD = 3;
+}
+
+message Seat {
+  string id = 1;
+  string event_id = 2;
+  string label = 3;
+  SeatStatus status = 4;
+}
+
+message CreateEventRequest {
+  string name = 1;
+  int32 seat_count = 2;
+}
+
+message CreateEventResponse {
+  string event_id = 1;
+}
+
+message ListSeatsRequest {
+  string event_id = 1;
+}
+
+message ListSeatsResponse {
+  repeated Seat seats = 1;
+}
+
+message ReserveSeatsRequest {
+  string event_id = 1;
+  repeated string seat_ids = 2;
+  string order_id = 3;
+}
+
+message ReserveSeatsResponse {
+  repeated Seat seats = 1;
+}
+
+message ConfirmSeatsRequest {
+  string event_id = 1;
+  repeated string seat_ids = 2;
+  string order_id = 3;
+}
+
+message ConfirmSeatsResponse {
+  repeated Seat seats = 1;
+}
+
+message ReleaseSeatsRequest {
+  string event_id = 1;
+  repeated string seat_ids = 2;
+  string order_id = 3;
+}
+
+message ReleaseSeatsResponse {
+  repeated Seat seats = 1;
+}

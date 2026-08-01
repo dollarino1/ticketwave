@@ -25,7 +25,7 @@ message LoginRequest {
 message LoginResponse {
   string access_token = 1;
   string refresh_token = 2;
-  int64 expiresIn = 3;
+  int64 expires_in = 3;
 }
 
 message RefreshRequest {
@@ -35,5 +35,5 @@ message RefreshRequest {
 message RefreshResponse {
   string access_token = 1;
   string refresh_token = 2;
-  int64 expiresIn = 3;
+  int64 expires_in = 3;
 }
