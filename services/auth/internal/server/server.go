@@ -102,7 +102,7 @@ func (s *Server) Refresh(ctx context.Context, req *authv1.RefreshRequest) (*auth
 	if err != nil {
 		return nil, fmt.Errorf("start transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	var tokenID, userID uuid.UUID
 	var revoked bool

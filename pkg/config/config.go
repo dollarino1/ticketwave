@@ -7,12 +7,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func Load[T any]() (*T, error) {
-	_ = godotenv.Load()
+func Load[T any](envFile string) (*T, error) {
+	_ = godotenv.Load(envFile)
 
 	var cfg T
 	if err := env.Parse(&cfg); err != nil {
-		return nil, fmt.Errorf("load config: %w", err)
+		return nil, fmt.Errorf("parsing config: %w", err)
 	}
+
 	return &cfg, nil
 }
