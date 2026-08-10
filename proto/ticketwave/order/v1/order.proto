@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package ticketwave.order.v1;
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_PENDING = 1;
+  ORDER_STATUS_CONFIRMED = 2;
+  ORDER_STATUS_FAILED = 3;
+}
+
+message CreateOrderRequest {
+  string user_id = 1;
+  string event_id = 2;
+  repeated string seat_ids = 3;
+  int64 amount_cents = 4;
+}
+
+message CreateOrderResponse {
+  string order_id = 1;
+  OrderStatus status = 2;
+}
+
+message GetOrderRequest {
+  string order_id = 1;
+}
+
+message GetOrderResponse {
+  string order_id = 1;
+  string user_id = 2;
+  string event_id = 3;
+  repeated string seat_ids = 4;
+  int64 amount_cents = 5;
+  OrderStatus status = 6;
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ticketwave.payment.v1;
+
+service PaymentService {
+  rpc Charge(ChargeRequest) returns (ChargeResponse);
+}
+
+message ChargeRequest {
+  string order_id = 1;
+  int64 amount_cents = 2;
+}
+
+message ChargeResponse {
+  string payment_id = 1;
+}
