@@ -10,5 +10,6 @@
 # OS
 .DS_Store
 Thumbs.db
-.env.*
+.env.auth
+.env.inventory
 certs/private.pem

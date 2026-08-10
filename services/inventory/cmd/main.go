@@ -8,6 +8,7 @@ import (
 	inventoryv1 "github.com/dollarino1/ticketwave/gen/ticketwave/inventory/v1"
 	"github.com/dollarino1/ticketwave/pkg/config"
 	"github.com/dollarino1/ticketwave/pkg/postgres"
+	"github.com/dollarino1/ticketwave/pkg/redis"
 	appconfig "github.com/dollarino1/ticketwave/services/inventory/internal/config"
 	"github.com/dollarino1/ticketwave/services/inventory/internal/server"
 	"google.golang.org/grpc"
@@ -28,14 +29,24 @@ func main() {
 	defer pool.Close()
 	log.Println("Connected to database")
 
+	redisClient, err := redis.New(ctx, cfg.RedisAddr)
+	if err != nil {
+		log.Fatalf("failed to connect to redis: %v", err)
+	}
+	defer func() { _ = redisClient.Close() }()
+	log.Println("Connected to redis")
+
 	var lc net.ListenConfig
 	lis, err := lc.Listen(ctx, "tcp", cfg.GRPCPort)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	inventorySrv := server.New(pool, redisClient)
+	inventorySrv.StartHoldSweeper(ctx)
+
 	grpcServer := grpc.NewServer()
-	inventoryv1.RegisterInventoryServiceServer(grpcServer, server.New(pool))
+	inventoryv1.RegisterInventoryServiceServer(grpcServer, inventorySrv)
 	reflection.Register(grpcServer)
 	log.Printf("server listening at %v", lis.Addr())
 	if err := grpcServer.Serve(lis); err != nil {
