@@ -28,5 +28,68 @@ services:
       timeout: 5s
       retries: 5
 
+  # Single-node Kafka in KRaft mode: one process is both broker and controller,
+  # so there is no separate ZooKeeper container. Two listeners because the same
+  # broker must be reachable two ways: containers use kafka:19092 (INTERNAL),
+  # while Go services run on the host and use localhost:9092 (EXTERNAL). The
+  # advertised address is what a client is told to reconnect to after its first
+  # connection, so each listener advertises the address its own clients can reach.
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: ticketwave-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:19092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  # One-shot job: creates the topics, then exits. Topics are created explicitly
+  # (auto-create is off above) so a typo in a topic name fails loudly instead of
+  # silently creating a new empty topic.
+  kafka-init:
+    image: apache/kafka:4.3.1
+    container_name: ticketwave-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic order-events --partitions 3 --replication-factor 1
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic order-events.dlq --partitions 1 --replication-factor 1
+
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:v1.5.0
+    container_name: ticketwave-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8088:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ticketwave
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+
 volumes:
   postgres-data:
+  kafka-data:

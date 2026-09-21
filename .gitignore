@@ -14,4 +14,6 @@ Thumbs.db
 .env.inventory
 .env.payment
 .env.order
+.env.notification
+.env.analytics
 certs/private.pem

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package ticketwave.events.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// OrderEvent is the only message type on the order-events topic. It carries the
+// order's state at the moment of the change (event-carried state transfer), so a
+// consumer never has to call order-svc back to find out what the order contained.
+//
+// Kafka key = order_id, which keeps every event of one order on one partition and
+// therefore in order. message_id is unique per message and is what consumers use
+// to skip duplicates, because delivery is at-least-once.
+message OrderEvent {
+  string message_id = 1;
+  google.protobuf.Timestamp occurred_at = 2;
+  OrderEventType type = 3;
+  string order_id = 4;
+  string user_id = 5;
+  string event_id = 6;
+  repeated string seat_ids = 7;
+  int64 amount_cents = 8;
+  // Set only when type is ORDER_EVENT_TYPE_FAILED.
+  OrderFailureReason failure_reason = 9;
+}
+
+enum OrderEventType {
+  ORDER_EVENT_TYPE_UNSPECIFIED = 0;
+  ORDER_EVENT_TYPE_CREATED = 1;
+  ORDER_EVENT_TYPE_CONFIRMED = 2;
+  ORDER_EVENT_TYPE_FAILED = 3;
+}
+
+enum OrderFailureReason {
+  ORDER_FAILURE_REASON_UNSPECIFIED = 0;
+  ORDER_FAILURE_REASON_SEATS_UNAVAILABLE = 1;
+  ORDER_FAILURE_REASON_PAYMENT_DECLINED = 2;
+}
