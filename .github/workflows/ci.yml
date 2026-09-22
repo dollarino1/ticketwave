@@ -161,7 +161,7 @@ jobs:
         # project's own generator is used, not openssl: OpenSSL 3 writes PKCS#8 by
         # default, while pkg/jwt reads the PKCS#1 format this produces.
         run: go run ./scripts/genkeys
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Build and start the whole system
         # Named explicitly so the Kafka UI, which the test does not need, is skipped.
         # Their dependencies (postgres, redis, kafka and the one-shot jobs) come along.
