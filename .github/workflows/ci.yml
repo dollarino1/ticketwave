@@ -24,7 +24,7 @@ jobs:
         with:
           fetch-depth: 0 # buf breaking compares against the base branch's history
       # protoc-gen-go and -grpc are Go programs, installed below and run by buf.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - uses: bufbuild/buf-action@v1
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod # one place decides the Go version, for dev and CI alike
       - name: gofmt
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       # govulncheck reports only vulnerabilities in code paths this project can
@@ -153,7 +153,7 @@ jobs:
     needs: [go, web]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
       - name: Signing keys for this run only
