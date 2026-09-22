@@ -1,0 +1,16 @@
+# The Docker build context is everything sent to the daemon. Keep secrets and bulk out.
+.git
+.claude
+.idea
+.vscode
+
+# Secrets: keys and per-service env files must never enter an image layer.
+certs
+.env*
+!.env*.example
+
+# The frontend has its own Dockerfile and context.
+web
+
+*.exe
+*.test

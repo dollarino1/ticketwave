@@ -77,6 +77,10 @@ services:
       - |
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic order-events --partitions 3 --replication-factor 1
         /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic order-events.dlq --partitions 1 --replication-factor 1
+        # One partition: the realtime service reads it as a broadcast tail (every
+        # instance needs every message), and a single partition keeps all seat
+        # changes globally ordered, which a live map wants.
+        /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:19092 --create --if-not-exists --topic seat-events --partitions 1 --replication-factor 1
 
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:v1.5.0
@@ -90,6 +94,213 @@ services:
       KAFKA_CLUSTERS_0_NAME: ticketwave
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
 
+  # ---------------------------------------------------------------------------
+  # The application itself. Everything below is behind the "apps" profile, so a
+  # plain `docker compose up` still starts only the infrastructure (the everyday
+  # mode while writing Go on the host), and
+  #   docker compose --profile apps up --build
+  # starts the whole system. Only the web container is published to the host; the
+  # services reach each other by name on the compose network, and nothing but nginx
+  # can reach the gateway.
+  # ---------------------------------------------------------------------------
+
+  # One-shot: brings every database up to the latest schema, then exits. The app
+  # containers wait for it to finish successfully. golang-migrate records what it
+  # has applied, so running it against an already-migrated database does nothing.
+  migrate:
+    profiles: ["apps"]
+    image: migrate/migrate:v4.19.1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    volumes:
+      - ./migrations:/migrations:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        for pair in auth:auth inventory:inventory order:orders payment:payment analytics:analytics; do
+          dir=$${pair%%:*}; db=$${pair##*:}
+          echo "migrating $$db"
+          migrate -path /migrations/$$dir -database "postgres://ticketwave:ticketwave@postgres:5432/$$db?sslmode=disable" up
+        done
+
+  auth:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: auth } }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/auth?sslmode=disable
+      ORGANIZER_EMAILS: organizer@ticketwave.test
+      # Spans go here whether or not the "observability" profile is up: the OTLP
+      # exporter dials lazily, so a missing Tempo just means nothing is listening —
+      # exports fail quietly in the background rather than blocking startup.
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+    volumes:
+      # The signing key. Only auth-svc gets the private half.
+      - ./certs/private.pem:/app/certs/private.pem:ro
+
+  inventory:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: inventory } }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+      kafka-init: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/inventory?sslmode=disable
+      REDIS_ADDR: redis:6379
+      KAFKA_BROKERS: kafka:19092
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+
+  payment:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: payment } }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/payment?sslmode=disable
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+
+  order:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: order } }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      kafka-init: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/orders?sslmode=disable
+      INVENTORY_ADDR: inventory:50052
+      PAYMENT_ADDR: payment:50053
+      KAFKA_BROKERS: kafka:19092
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+
+  notification:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: notification } }
+    depends_on:
+      kafka-init: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    environment:
+      KAFKA_BROKERS: kafka:19092
+      REDIS_ADDR: redis:6379
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+
+  analytics:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: analytics } }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      kafka-init: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/analytics?sslmode=disable
+      KAFKA_BROKERS: kafka:19092
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+
+  gateway:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: gateway } }
+    depends_on:
+      - auth
+      - inventory
+      - order
+      - analytics
+      - redis
+    environment:
+      AUTH_ADDR: auth:50051
+      INVENTORY_ADDR: inventory:50052
+      ORDER_ADDR: order:50054
+      ANALYTICS_ADDR: analytics:50056
+      REDIS_ADDR: redis:6379
+      # nginx sits in front and overwrites X-Real-IP, so this is the one place the
+      # header may be believed. Left false, every visitor would share nginx's address
+      # and therefore one rate-limit bucket.
+      TRUST_PROXY_HEADERS: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+    volumes:
+      # Verification only needs the public half.
+      - ./certs/public.pem:/app/certs/public.pem:ro
+
+  realtime:
+    profiles: ["apps"]
+    build: { context: ., args: { SERVICE: realtime } }
+    depends_on:
+      kafka-init: { condition: service_completed_successfully }
+    environment:
+      KAFKA_BROKERS: kafka:19092
+      OTEL_EXPORTER_OTLP_ENDPOINT: tempo:4317
+
+  web:
+    profiles: ["apps"]
+    build: ./web
+    depends_on:
+      - gateway
+      - realtime
+    ports:
+      - "8080:8080"
+
+  # ---------------------------------------------------------------------------
+  # Observability. Behind its own profile so it costs nothing unless asked for:
+  #   docker compose --profile apps --profile observability up -d
+  # Prometheus scrapes every service's /metrics; Grafana draws them. Both are bound to
+  # 127.0.0.1, so they are reachable from this machine only, never the network.
+  # ---------------------------------------------------------------------------
+  prometheus:
+    profiles: ["observability"]
+    image: prom/prometheus:v3.7.0
+    container_name: ticketwave-prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+
+  # Traces. Services push spans to it over OTLP/gRPC (see pkg/observability); Grafana
+  # queries it to draw the waterfall for one trace ID. 127.0.0.1 only, like the rest
+  # of this stack: nothing here is meant to be reachable off this machine.
+  tempo:
+    profiles: ["observability"]
+    image: grafana/tempo:2.9.0
+    container_name: ticketwave-tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    ports:
+      - "127.0.0.1:4317:4317" # OTLP/gRPC receiver
+      - "127.0.0.1:3200:3200" # Tempo's own query API, used by Grafana's datasource
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+
+  grafana:
+    profiles: ["observability"]
+    image: grafana/grafana:12.3.0
+    container_name: ticketwave-grafana
+    depends_on:
+      - prometheus
+      - tempo
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      # Local development only: anonymous access spares a login for a dashboard that
+      # is not reachable from outside this machine anyway. Editor, not Viewer,
+      # because Grafana's default RBAC withholds Explore (browsing a trace by ID)
+      # from Viewers even for a read-only anonymous session.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Editor
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
 volumes:
+  prometheus-data:
+  grafana-data:
+  tempo-data:
   postgres-data:
   kafka-data:

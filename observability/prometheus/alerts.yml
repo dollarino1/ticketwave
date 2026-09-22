@@ -1,0 +1,59 @@
+# Alert rules. Each one answers "what would I want to be woken up for?". They are
+# deliberately few: an alert that fires often gets ignored, and an ignored alert is
+# worse than none. There is no Alertmanager in this setup, so firing alerts are shown
+# on Prometheus's Alerts page; in production they would route to a pager or chat.
+groups:
+  - name: ticketwave
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels: { severity: page }
+        annotations:
+          summary: "{{ $labels.job }} is not answering its metrics endpoint"
+
+      # The most important alert of a system built on the outbox pattern. Every event
+      # (order confirmed, seat sold) leaves through it; if the oldest row keeps aging,
+      # nothing downstream is hearing about anything, while every API still looks fine.
+      - alert: OutboxStuck
+        expr: ticketwave_outbox_oldest_unpublished_age_seconds > 60
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "{{ $labels.job }}'s outbox has held an event for over a minute"
+          description: "The publisher is down or Kafka is unreachable. Emails, analytics and the live seat map are all stale."
+
+      # A dead-lettered message is data the system gave up on. Any at all is worth a look.
+      - alert: MessagesDeadLettered
+        expr: increase(ticketwave_kafka_consumer_messages_total{result="dead_lettered"}[10m]) > 0
+        labels: { severity: ticket }
+        annotations:
+          summary: "{{ $labels.group }} dead-lettered messages in the last 10 minutes"
+
+      - alert: GatewayServerErrors
+        expr: |
+          sum(rate(ticketwave_http_requests_total{code=~"5.."}[5m]))
+            / sum(rate(ticketwave_http_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: page }
+        annotations:
+          summary: "More than 5% of gateway requests are failing with a 5xx"
+
+      # Not an outage but a change in the business: someone's card processing has
+      # broken if declines climb while traffic stays flat.
+      - alert: PaymentDeclineSpike
+        expr: |
+          sum(rate(ticketwave_orders_total{reason="payment_declined"}[10m]))
+            / clamp_min(sum(rate(ticketwave_orders_total[10m])), 0.001) > 0.5
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: "More than half of orders are being declined"
+
+      # Password guessing looks like this: a lot of refused logins, from few sources.
+      - alert: LoginRateLimitSpike
+        expr: sum(rate(ticketwave_ratelimit_rejections_total{limit=~"login.*"}[5m])) > 1
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          summary: "Logins are being rate-limited at over 1 per second: possible credential stuffing"

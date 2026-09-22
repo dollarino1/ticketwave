@@ -1,0 +1,61 @@
+name: Release
+
+# Publishing is triggered by pushing a version tag (git tag v1.2.3 && git push --tags),
+# never by a plain push to main. A tag is a deliberate decision to ship that commit.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  images:
+    name: Image ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push to GitHub Container Registry with the run's own token
+      id-token: write # lets build-push-action sign the provenance attestation
+      attestations: write
+    strategy:
+      fail-fast: false # one failing image should not hide whether the others build
+      matrix:
+        include:
+          - { image: auth, context: ., service: auth }
+          - { image: inventory, context: ., service: inventory }
+          - { image: payment, context: ., service: payment }
+          - { image: order, context: ., service: order }
+          - { image: notification, context: ., service: notification }
+          - { image: analytics, context: ., service: analytics }
+          - { image: gateway, context: ., service: gateway }
+          - { image: realtime, context: ., service: realtime }
+          - { image: web, context: ./web, service: "" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ticketwave-${{ matrix.image }}
+          # v1.2.3 also yields 1.2 and 1, and the commit SHA is always available, so a
+          # deployment can pin the exact build rather than a moving tag.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          build-args: ${{ matrix.service != '' && format('SERVICE={0}', matrix.service) || '' }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          provenance: true

@@ -20,6 +20,8 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	InventoryService_CreateEvent_FullMethodName  = "/ticketwave.inventory.v1.InventoryService/CreateEvent"
+	InventoryService_GetEvent_FullMethodName     = "/ticketwave.inventory.v1.InventoryService/GetEvent"
+	InventoryService_ListEvents_FullMethodName   = "/ticketwave.inventory.v1.InventoryService/ListEvents"
 	InventoryService_ListSeats_FullMethodName    = "/ticketwave.inventory.v1.InventoryService/ListSeats"
 	InventoryService_ReserveSeats_FullMethodName = "/ticketwave.inventory.v1.InventoryService/ReserveSeats"
 	InventoryService_ConfirmSeats_FullMethodName = "/ticketwave.inventory.v1.InventoryService/ConfirmSeats"
@@ -31,6 +33,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type InventoryServiceClient interface {
 	CreateEvent(ctx context.Context, in *CreateEventRequest, opts ...grpc.CallOption) (*CreateEventResponse, error)
+	GetEvent(ctx context.Context, in *GetEventRequest, opts ...grpc.CallOption) (*GetEventResponse, error)
+	// ListEvents returns the newest events first, with how many seats are left.
+	ListEvents(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*ListEventsResponse, error)
 	ListSeats(ctx context.Context, in *ListSeatsRequest, opts ...grpc.CallOption) (*ListSeatsResponse, error)
 	ReserveSeats(ctx context.Context, in *ReserveSeatsRequest, opts ...grpc.CallOption) (*ReserveSeatsResponse, error)
 	ConfirmSeats(ctx context.Context, in *ConfirmSeatsRequest, opts ...grpc.CallOption) (*ConfirmSeatsResponse, error)
@@ -49,6 +54,26 @@ func (c *inventoryServiceClient) CreateEvent(ctx context.Context, in *CreateEven
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateEventResponse)
 	err := c.cc.Invoke(ctx, InventoryService_CreateEvent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryServiceClient) GetEvent(ctx context.Context, in *GetEventRequest, opts ...grpc.CallOption) (*GetEventResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEventResponse)
+	err := c.cc.Invoke(ctx, InventoryService_GetEvent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryServiceClient) ListEvents(ctx context.Context, in *ListEventsRequest, opts ...grpc.CallOption) (*ListEventsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListEventsResponse)
+	err := c.cc.Invoke(ctx, InventoryService_ListEvents_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +125,9 @@ func (c *inventoryServiceClient) ReleaseSeats(ctx context.Context, in *ReleaseSe
 // for forward compatibility.
 type InventoryServiceServer interface {
 	CreateEvent(context.Context, *CreateEventRequest) (*CreateEventResponse, error)
+	GetEvent(context.Context, *GetEventRequest) (*GetEventResponse, error)
+	// ListEvents returns the newest events first, with how many seats are left.
+	ListEvents(context.Context, *ListEventsRequest) (*ListEventsResponse, error)
 	ListSeats(context.Context, *ListSeatsRequest) (*ListSeatsResponse, error)
 	ReserveSeats(context.Context, *ReserveSeatsRequest) (*ReserveSeatsResponse, error)
 	ConfirmSeats(context.Context, *ConfirmSeatsRequest) (*ConfirmSeatsResponse, error)
@@ -116,6 +144,12 @@ type UnimplementedInventoryServiceServer struct{}
 
 func (UnimplementedInventoryServiceServer) CreateEvent(context.Context, *CreateEventRequest) (*CreateEventResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateEvent not implemented")
+}
+func (UnimplementedInventoryServiceServer) GetEvent(context.Context, *GetEventRequest) (*GetEventResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetEvent not implemented")
+}
+func (UnimplementedInventoryServiceServer) ListEvents(context.Context, *ListEventsRequest) (*ListEventsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListEvents not implemented")
 }
 func (UnimplementedInventoryServiceServer) ListSeats(context.Context, *ListSeatsRequest) (*ListSeatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListSeats not implemented")
@@ -164,6 +198,42 @@ func _InventoryService_CreateEvent_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InventoryServiceServer).CreateEvent(ctx, req.(*CreateEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InventoryService_GetEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServiceServer).GetEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InventoryService_GetEvent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServiceServer).GetEvent(ctx, req.(*GetEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _InventoryService_ListEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListEventsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServiceServer).ListEvents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: InventoryService_ListEvents_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServiceServer).ListEvents(ctx, req.(*ListEventsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -250,6 +320,14 @@ var InventoryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateEvent",
 			Handler:    _InventoryService_CreateEvent_Handler,
+		},
+		{
+			MethodName: "GetEvent",
+			Handler:    _InventoryService_GetEvent_Handler,
+		},
+		{
+			MethodName: "ListEvents",
+			Handler:    _InventoryService_ListEvents_Handler,
 		},
 		{
 			MethodName: "ListSeats",

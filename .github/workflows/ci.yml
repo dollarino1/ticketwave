@@ -1,0 +1,189 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch makes the older run pointless, so cancel it
+# instead of queueing behind it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# The token gets read access only. Jobs that need more ask for it themselves.
+permissions:
+  contents: read
+
+jobs:
+  proto:
+    name: Protobuf
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # buf breaking compares against the base branch's history
+      # protoc-gen-go and -grpc are Go programs, installed below and run by buf.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: bufbuild/buf-action@v1
+        with:
+          version: 1.72.0
+          lint: true
+          breaking: ${{ github.event_name == 'pull_request' }}
+          format: false
+          push: false
+      # The generated Go code is committed, so it must match the .proto files.
+      # Otherwise someone edits a proto, forgets to regenerate, and the code that
+      # compiles is not the code that was reviewed.
+      - name: Generated code is up to date
+        run: |
+          # Pinned to the versions that produced the committed files (see their headers),
+          # or a newer generator would change every file and this check would always fail.
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
+          buf generate
+          git diff --exit-code -- gen || { echo "::error::gen/ is stale. Run 'buf generate' and commit the result."; exit 1; }
+
+  go:
+    name: Go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod # one place decides the Go version, for dev and CI alike
+      - name: gofmt
+        run: |
+          unformatted="$(git ls-files -z '*.go' | xargs -0 gofmt -l)"
+          if [ -n "$unformatted" ]; then echo "::error::not gofmt'd:"; echo "$unformatted"; exit 1; fi
+      - name: go vet
+        run: go vet -tags integration ./...
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.12.2
+          args: --build-tags integration
+      - name: Start Postgres, Redis and Kafka
+        # The same compose file developers use, so CI and a laptop cannot drift apart.
+        run: |
+          docker compose up -d --wait postgres redis kafka
+          docker compose run --rm kafka-init
+      # -race is what a laptop without a C compiler cannot run; CI can. It finds data
+      # races that no amount of reading the code will.
+      - name: Test (unit and integration, with the race detector)
+        env:
+          AUTH_DATABASE_URL: postgres://ticketwave:ticketwave@localhost:5433/auth?sslmode=disable
+          INVENTORY_DATABASE_URL: postgres://ticketwave:ticketwave@localhost:5433/inventory?sslmode=disable
+          ORDER_DATABASE_URL: postgres://ticketwave:ticketwave@localhost:5433/orders?sslmode=disable
+          ANALYTICS_DATABASE_URL: postgres://ticketwave:ticketwave@localhost:5433/analytics?sslmode=disable
+          REDIS_ADDR: localhost:6379
+          KAFKA_BROKERS: localhost:9092
+        run: go test -race -tags integration -count=1 -coverprofile=coverage.out ./...
+      - name: Coverage summary
+        run: go tool cover -func=coverage.out | tail -1
+      - name: Show service logs if tests failed
+        if: failure()
+        run: docker compose logs --tail=100 postgres redis kafka
+
+  vulncheck:
+    name: Dependency vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # govulncheck reports only vulnerabilities in code paths this project can
+      # actually reach, so a hit is worth reading, unlike a raw dependency list.
+      - run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - run: govulncheck ./...
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: web
+
+  prometheus:
+    name: Prometheus rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # promtool ships inside the Prometheus image. "check config" validates the
+      # syntax of the scrape config and the alert rules; "test rules" runs
+      # alerts_test.yml, which feeds synthetic series to each alert and asserts
+      # exactly when it fires, so a wrong threshold fails here and not in an incident.
+      - name: Check config and rules
+        run: |
+          docker run --rm --entrypoint promtool -v "$PWD/observability/prometheus:/etc/prometheus:ro" \
+            prom/prometheus:v3.7.0 check config /etc/prometheus/prometheus.yml
+      - name: Test alert rules
+        run: |
+          docker run --rm --entrypoint promtool -v "$PWD/observability/prometheus:/etc/prometheus:ro" \
+            -w /etc/prometheus prom/prometheus:v3.7.0 test rules alerts_test.yml
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: End-to-end smoke test
+    runs-on: ubuntu-latest
+    # Needs no other job's output, but there is no point spending minutes building
+    # nine images when the code does not even compile, so it waits for the cheap checks.
+    needs: [go, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Signing keys for this run only
+        # certs/ is gitignored, so a throwaway key pair is generated fresh here. The
+        # project's own generator is used, not openssl: OpenSSL 3 writes PKCS#8 by
+        # default, while pkg/jwt reads the PKCS#1 format this produces.
+        run: go run ./scripts/genkeys
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and start the whole system
+        # Named explicitly so the Kafka UI, which the test does not need, is skipped.
+        # Their dependencies (postgres, redis, kafka and the one-shot jobs) come along.
+        run: |
+          docker compose --profile apps up -d --build \
+            migrate auth inventory payment order notification analytics gateway realtime web
+      - name: Wait until every service is running
+        # The Go images are distroless, with no shell to run a health check in, so
+        # "running" is what can be observed. Only the two one-shot jobs may be exited.
+        run: |
+          for _ in $(seq 1 60); do
+            not_ready="$(docker compose --profile apps ps -a --format '{{.Service}} {{.State}}' \
+              | grep -vE '^(migrate|kafka-init) exited$' | grep -v ' running$' || true)"
+            [ -z "$not_ready" ] && exit 0
+            sleep 2
+          done
+          echo "$not_ready"; exit 1
+      - name: Smoke test
+        run: bash scripts/smoke.sh
+      - name: Show logs if the smoke test failed
+        if: failure()
+        run: docker compose --profile apps logs --tail=80
+      - name: Stop
+        if: always()
+        run: docker compose --profile apps down -v

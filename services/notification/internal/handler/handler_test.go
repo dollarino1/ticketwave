@@ -121,6 +121,36 @@ func TestHandle_FailedEmailExplainsTheReason(t *testing.T) {
 	}
 }
 
+// After a refusal we know the customer was not charged. After a breakdown we do
+// not, so the email must not claim it.
+func TestHandle_FailedEmailOnlyPromisesNoChargeWhenThatIsKnown(t *testing.T) {
+	cases := map[eventsv1.OrderFailureReason]bool{
+		eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_SEATS_UNAVAILABLE:   true,
+		eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_PAYMENT_DECLINED:    true,
+		eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_SERVICE_UNAVAILABLE: false,
+		eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_UNSPECIFIED:         false,
+	}
+	for reason, promisesNoCharge := range cases {
+		t.Run(reason.String(), func(t *testing.T) {
+			sender := &fakeSender{}
+			ev := event(eventsv1.OrderEventType_ORDER_EVENT_TYPE_FAILED)
+			ev.FailureReason = reason
+
+			if err := New(sender, newFakeStore()).Handle(context.Background(), message(t, ev)); err != nil {
+				t.Fatalf("Handle: %v", err)
+			}
+
+			body := sender.sent[0].Body
+			if got := strings.Contains(body, "You have not been charged"); got != promisesNoCharge {
+				t.Errorf("body %q: promises no charge = %v, want %v", body, got, promisesNoCharge)
+			}
+			if !promisesNoCharge && !strings.Contains(body, "contact support") {
+				t.Errorf("body %q should tell the customer what to do if they were charged", body)
+			}
+		})
+	}
+}
+
 func TestHandle_CreatedSendsNothing(t *testing.T) {
 	sender, store := &fakeSender{}, newFakeStore()
 

@@ -1,0 +1,16 @@
+apiVersion: 1
+datasources:
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # Lets a trace's service.name / span attributes jump straight to a Prometheus
+      # query for that service, and back — the two datasources cross-reference.
+      tracesToMetrics:
+        datasourceUid: prometheus
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true

@@ -9,6 +9,7 @@ package inventoryv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -141,6 +142,259 @@ func (x *Seat) GetStatus() SeatStatus {
 	return SeatStatus_SEAT_STATUS_UNSPECIFIED
 }
 
+type Event struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name           string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	TotalSeats     int32                  `protobuf:"varint,3,opt,name=total_seats,json=totalSeats,proto3" json:"total_seats,omitempty"`
+	AvailableSeats int32                  `protobuf:"varint,4,opt,name=available_seats,json=availableSeats,proto3" json:"available_seats,omitempty"`
+	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *Event) Reset() {
+	*x = Event{}
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Event) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event) ProtoMessage() {}
+
+func (x *Event) ProtoReflect() protoreflect.Message {
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event.ProtoReflect.Descriptor instead.
+func (*Event) Descriptor() ([]byte, []int) {
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Event) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Event) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Event) GetTotalSeats() int32 {
+	if x != nil {
+		return x.TotalSeats
+	}
+	return 0
+}
+
+func (x *Event) GetAvailableSeats() int32 {
+	if x != nil {
+		return x.AvailableSeats
+	}
+	return 0
+}
+
+func (x *Event) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type GetEventRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EventId       string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEventRequest) Reset() {
+	*x = GetEventRequest{}
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEventRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEventRequest) ProtoMessage() {}
+
+func (x *GetEventRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEventRequest.ProtoReflect.Descriptor instead.
+func (*GetEventRequest) Descriptor() ([]byte, []int) {
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetEventRequest) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+type GetEventResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Event         *Event                 `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetEventResponse) Reset() {
+	*x = GetEventResponse{}
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetEventResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetEventResponse) ProtoMessage() {}
+
+func (x *GetEventResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetEventResponse.ProtoReflect.Descriptor instead.
+func (*GetEventResponse) Descriptor() ([]byte, []int) {
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GetEventResponse) GetEvent() *Event {
+	if x != nil {
+		return x.Event
+	}
+	return nil
+}
+
+type ListEventsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Default 50, capped at 200.
+	Limit         int32 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListEventsRequest) Reset() {
+	*x = ListEventsRequest{}
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListEventsRequest) ProtoMessage() {}
+
+func (x *ListEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListEventsRequest.ProtoReflect.Descriptor instead.
+func (*ListEventsRequest) Descriptor() ([]byte, []int) {
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ListEventsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListEventsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Events        []*Event               `protobuf:"bytes,1,rep,name=events,proto3" json:"events,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListEventsResponse) Reset() {
+	*x = ListEventsResponse{}
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListEventsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListEventsResponse) ProtoMessage() {}
+
+func (x *ListEventsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListEventsResponse.ProtoReflect.Descriptor instead.
+func (*ListEventsResponse) Descriptor() ([]byte, []int) {
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ListEventsResponse) GetEvents() []*Event {
+	if x != nil {
+		return x.Events
+	}
+	return nil
+}
+
 type CreateEventRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -151,7 +405,7 @@ type CreateEventRequest struct {
 
 func (x *CreateEventRequest) Reset() {
 	*x = CreateEventRequest{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[1]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -163,7 +417,7 @@ func (x *CreateEventRequest) String() string {
 func (*CreateEventRequest) ProtoMessage() {}
 
 func (x *CreateEventRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[1]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -176,7 +430,7 @@ func (x *CreateEventRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEventRequest.ProtoReflect.Descriptor instead.
 func (*CreateEventRequest) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{1}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *CreateEventRequest) GetName() string {
@@ -202,7 +456,7 @@ type CreateEventResponse struct {
 
 func (x *CreateEventResponse) Reset() {
 	*x = CreateEventResponse{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[2]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -214,7 +468,7 @@ func (x *CreateEventResponse) String() string {
 func (*CreateEventResponse) ProtoMessage() {}
 
 func (x *CreateEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[2]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,7 +481,7 @@ func (x *CreateEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEventResponse.ProtoReflect.Descriptor instead.
 func (*CreateEventResponse) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{2}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *CreateEventResponse) GetEventId() string {
@@ -246,7 +500,7 @@ type ListSeatsRequest struct {
 
 func (x *ListSeatsRequest) Reset() {
 	*x = ListSeatsRequest{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[3]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -258,7 +512,7 @@ func (x *ListSeatsRequest) String() string {
 func (*ListSeatsRequest) ProtoMessage() {}
 
 func (x *ListSeatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[3]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -271,7 +525,7 @@ func (x *ListSeatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSeatsRequest.ProtoReflect.Descriptor instead.
 func (*ListSeatsRequest) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{3}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListSeatsRequest) GetEventId() string {
@@ -290,7 +544,7 @@ type ListSeatsResponse struct {
 
 func (x *ListSeatsResponse) Reset() {
 	*x = ListSeatsResponse{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[4]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -302,7 +556,7 @@ func (x *ListSeatsResponse) String() string {
 func (*ListSeatsResponse) ProtoMessage() {}
 
 func (x *ListSeatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[4]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -315,7 +569,7 @@ func (x *ListSeatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSeatsResponse.ProtoReflect.Descriptor instead.
 func (*ListSeatsResponse) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{4}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListSeatsResponse) GetSeats() []*Seat {
@@ -336,7 +590,7 @@ type ReserveSeatsRequest struct {
 
 func (x *ReserveSeatsRequest) Reset() {
 	*x = ReserveSeatsRequest{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[5]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -348,7 +602,7 @@ func (x *ReserveSeatsRequest) String() string {
 func (*ReserveSeatsRequest) ProtoMessage() {}
 
 func (x *ReserveSeatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[5]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -361,7 +615,7 @@ func (x *ReserveSeatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReserveSeatsRequest.ProtoReflect.Descriptor instead.
 func (*ReserveSeatsRequest) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{5}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ReserveSeatsRequest) GetEventId() string {
@@ -394,7 +648,7 @@ type ReserveSeatsResponse struct {
 
 func (x *ReserveSeatsResponse) Reset() {
 	*x = ReserveSeatsResponse{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[6]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -406,7 +660,7 @@ func (x *ReserveSeatsResponse) String() string {
 func (*ReserveSeatsResponse) ProtoMessage() {}
 
 func (x *ReserveSeatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[6]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -419,7 +673,7 @@ func (x *ReserveSeatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReserveSeatsResponse.ProtoReflect.Descriptor instead.
 func (*ReserveSeatsResponse) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{6}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ReserveSeatsResponse) GetSeats() []*Seat {
@@ -440,7 +694,7 @@ type ConfirmSeatsRequest struct {
 
 func (x *ConfirmSeatsRequest) Reset() {
 	*x = ConfirmSeatsRequest{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[7]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -452,7 +706,7 @@ func (x *ConfirmSeatsRequest) String() string {
 func (*ConfirmSeatsRequest) ProtoMessage() {}
 
 func (x *ConfirmSeatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[7]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -465,7 +719,7 @@ func (x *ConfirmSeatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmSeatsRequest.ProtoReflect.Descriptor instead.
 func (*ConfirmSeatsRequest) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{7}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ConfirmSeatsRequest) GetEventId() string {
@@ -498,7 +752,7 @@ type ConfirmSeatsResponse struct {
 
 func (x *ConfirmSeatsResponse) Reset() {
 	*x = ConfirmSeatsResponse{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[8]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -510,7 +764,7 @@ func (x *ConfirmSeatsResponse) String() string {
 func (*ConfirmSeatsResponse) ProtoMessage() {}
 
 func (x *ConfirmSeatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[8]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -523,7 +777,7 @@ func (x *ConfirmSeatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfirmSeatsResponse.ProtoReflect.Descriptor instead.
 func (*ConfirmSeatsResponse) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{8}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ConfirmSeatsResponse) GetSeats() []*Seat {
@@ -544,7 +798,7 @@ type ReleaseSeatsRequest struct {
 
 func (x *ReleaseSeatsRequest) Reset() {
 	*x = ReleaseSeatsRequest{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[9]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -556,7 +810,7 @@ func (x *ReleaseSeatsRequest) String() string {
 func (*ReleaseSeatsRequest) ProtoMessage() {}
 
 func (x *ReleaseSeatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[9]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -569,7 +823,7 @@ func (x *ReleaseSeatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseSeatsRequest.ProtoReflect.Descriptor instead.
 func (*ReleaseSeatsRequest) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{9}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ReleaseSeatsRequest) GetEventId() string {
@@ -602,7 +856,7 @@ type ReleaseSeatsResponse struct {
 
 func (x *ReleaseSeatsResponse) Reset() {
 	*x = ReleaseSeatsResponse{}
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[10]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -614,7 +868,7 @@ func (x *ReleaseSeatsResponse) String() string {
 func (*ReleaseSeatsResponse) ProtoMessage() {}
 
 func (x *ReleaseSeatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[10]
+	mi := &file_ticketwave_inventory_v1_inventory_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -627,7 +881,7 @@ func (x *ReleaseSeatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseSeatsResponse.ProtoReflect.Descriptor instead.
 func (*ReleaseSeatsResponse) Descriptor() ([]byte, []int) {
-	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{10}
+	return file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ReleaseSeatsResponse) GetSeats() []*Seat {
@@ -641,12 +895,28 @@ var File_ticketwave_inventory_v1_inventory_proto protoreflect.FileDescriptor
 
 const file_ticketwave_inventory_v1_inventory_proto_rawDesc = "" +
 	"\n" +
-	"'ticketwave/inventory/v1/inventory.proto\x12\x17ticketwave.inventory.v1\"\x84\x01\n" +
+	"'ticketwave/inventory/v1/inventory.proto\x12\x17ticketwave.inventory.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x84\x01\n" +
 	"\x04Seat\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bevent_id\x18\x02 \x01(\tR\aeventId\x12\x14\n" +
 	"\x05label\x18\x03 \x01(\tR\x05label\x12;\n" +
-	"\x06status\x18\x04 \x01(\x0e2#.ticketwave.inventory.v1.SeatStatusR\x06status\"G\n" +
+	"\x06status\x18\x04 \x01(\x0e2#.ticketwave.inventory.v1.SeatStatusR\x06status\"\xb0\x01\n" +
+	"\x05Event\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
+	"\vtotal_seats\x18\x03 \x01(\x05R\n" +
+	"totalSeats\x12'\n" +
+	"\x0favailable_seats\x18\x04 \x01(\x05R\x0eavailableSeats\x129\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\",\n" +
+	"\x0fGetEventRequest\x12\x19\n" +
+	"\bevent_id\x18\x01 \x01(\tR\aeventId\"H\n" +
+	"\x10GetEventResponse\x124\n" +
+	"\x05event\x18\x01 \x01(\v2\x1e.ticketwave.inventory.v1.EventR\x05event\")\n" +
+	"\x11ListEventsRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\"L\n" +
+	"\x12ListEventsResponse\x126\n" +
+	"\x06events\x18\x01 \x03(\v2\x1e.ticketwave.inventory.v1.EventR\x06events\"G\n" +
 	"\x12CreateEventRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -680,9 +950,12 @@ const file_ticketwave_inventory_v1_inventory_proto_rawDesc = "" +
 	"\x17SEAT_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15SEAT_STATUS_AVAILABLE\x10\x01\x12\x14\n" +
 	"\x10SEAT_STATUS_HELD\x10\x02\x12\x14\n" +
-	"\x10SEAT_STATUS_SOLD\x10\x032\xa7\x04\n" +
+	"\x10SEAT_STATUS_SOLD\x10\x032\xef\x05\n" +
 	"\x10InventoryService\x12h\n" +
-	"\vCreateEvent\x12+.ticketwave.inventory.v1.CreateEventRequest\x1a,.ticketwave.inventory.v1.CreateEventResponse\x12b\n" +
+	"\vCreateEvent\x12+.ticketwave.inventory.v1.CreateEventRequest\x1a,.ticketwave.inventory.v1.CreateEventResponse\x12_\n" +
+	"\bGetEvent\x12(.ticketwave.inventory.v1.GetEventRequest\x1a).ticketwave.inventory.v1.GetEventResponse\x12e\n" +
+	"\n" +
+	"ListEvents\x12*.ticketwave.inventory.v1.ListEventsRequest\x1a+.ticketwave.inventory.v1.ListEventsResponse\x12b\n" +
 	"\tListSeats\x12).ticketwave.inventory.v1.ListSeatsRequest\x1a*.ticketwave.inventory.v1.ListSeatsResponse\x12k\n" +
 	"\fReserveSeats\x12,.ticketwave.inventory.v1.ReserveSeatsRequest\x1a-.ticketwave.inventory.v1.ReserveSeatsResponse\x12k\n" +
 	"\fConfirmSeats\x12,.ticketwave.inventory.v1.ConfirmSeatsRequest\x1a-.ticketwave.inventory.v1.ConfirmSeatsResponse\x12k\n" +
@@ -702,42 +975,55 @@ func file_ticketwave_inventory_v1_inventory_proto_rawDescGZIP() []byte {
 }
 
 var file_ticketwave_inventory_v1_inventory_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ticketwave_inventory_v1_inventory_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_ticketwave_inventory_v1_inventory_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_ticketwave_inventory_v1_inventory_proto_goTypes = []any{
-	(SeatStatus)(0),              // 0: ticketwave.inventory.v1.SeatStatus
-	(*Seat)(nil),                 // 1: ticketwave.inventory.v1.Seat
-	(*CreateEventRequest)(nil),   // 2: ticketwave.inventory.v1.CreateEventRequest
-	(*CreateEventResponse)(nil),  // 3: ticketwave.inventory.v1.CreateEventResponse
-	(*ListSeatsRequest)(nil),     // 4: ticketwave.inventory.v1.ListSeatsRequest
-	(*ListSeatsResponse)(nil),    // 5: ticketwave.inventory.v1.ListSeatsResponse
-	(*ReserveSeatsRequest)(nil),  // 6: ticketwave.inventory.v1.ReserveSeatsRequest
-	(*ReserveSeatsResponse)(nil), // 7: ticketwave.inventory.v1.ReserveSeatsResponse
-	(*ConfirmSeatsRequest)(nil),  // 8: ticketwave.inventory.v1.ConfirmSeatsRequest
-	(*ConfirmSeatsResponse)(nil), // 9: ticketwave.inventory.v1.ConfirmSeatsResponse
-	(*ReleaseSeatsRequest)(nil),  // 10: ticketwave.inventory.v1.ReleaseSeatsRequest
-	(*ReleaseSeatsResponse)(nil), // 11: ticketwave.inventory.v1.ReleaseSeatsResponse
+	(SeatStatus)(0),               // 0: ticketwave.inventory.v1.SeatStatus
+	(*Seat)(nil),                  // 1: ticketwave.inventory.v1.Seat
+	(*Event)(nil),                 // 2: ticketwave.inventory.v1.Event
+	(*GetEventRequest)(nil),       // 3: ticketwave.inventory.v1.GetEventRequest
+	(*GetEventResponse)(nil),      // 4: ticketwave.inventory.v1.GetEventResponse
+	(*ListEventsRequest)(nil),     // 5: ticketwave.inventory.v1.ListEventsRequest
+	(*ListEventsResponse)(nil),    // 6: ticketwave.inventory.v1.ListEventsResponse
+	(*CreateEventRequest)(nil),    // 7: ticketwave.inventory.v1.CreateEventRequest
+	(*CreateEventResponse)(nil),   // 8: ticketwave.inventory.v1.CreateEventResponse
+	(*ListSeatsRequest)(nil),      // 9: ticketwave.inventory.v1.ListSeatsRequest
+	(*ListSeatsResponse)(nil),     // 10: ticketwave.inventory.v1.ListSeatsResponse
+	(*ReserveSeatsRequest)(nil),   // 11: ticketwave.inventory.v1.ReserveSeatsRequest
+	(*ReserveSeatsResponse)(nil),  // 12: ticketwave.inventory.v1.ReserveSeatsResponse
+	(*ConfirmSeatsRequest)(nil),   // 13: ticketwave.inventory.v1.ConfirmSeatsRequest
+	(*ConfirmSeatsResponse)(nil),  // 14: ticketwave.inventory.v1.ConfirmSeatsResponse
+	(*ReleaseSeatsRequest)(nil),   // 15: ticketwave.inventory.v1.ReleaseSeatsRequest
+	(*ReleaseSeatsResponse)(nil),  // 16: ticketwave.inventory.v1.ReleaseSeatsResponse
+	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
 }
 var file_ticketwave_inventory_v1_inventory_proto_depIdxs = []int32{
 	0,  // 0: ticketwave.inventory.v1.Seat.status:type_name -> ticketwave.inventory.v1.SeatStatus
-	1,  // 1: ticketwave.inventory.v1.ListSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
-	1,  // 2: ticketwave.inventory.v1.ReserveSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
-	1,  // 3: ticketwave.inventory.v1.ConfirmSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
-	1,  // 4: ticketwave.inventory.v1.ReleaseSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
-	2,  // 5: ticketwave.inventory.v1.InventoryService.CreateEvent:input_type -> ticketwave.inventory.v1.CreateEventRequest
-	4,  // 6: ticketwave.inventory.v1.InventoryService.ListSeats:input_type -> ticketwave.inventory.v1.ListSeatsRequest
-	6,  // 7: ticketwave.inventory.v1.InventoryService.ReserveSeats:input_type -> ticketwave.inventory.v1.ReserveSeatsRequest
-	8,  // 8: ticketwave.inventory.v1.InventoryService.ConfirmSeats:input_type -> ticketwave.inventory.v1.ConfirmSeatsRequest
-	10, // 9: ticketwave.inventory.v1.InventoryService.ReleaseSeats:input_type -> ticketwave.inventory.v1.ReleaseSeatsRequest
-	3,  // 10: ticketwave.inventory.v1.InventoryService.CreateEvent:output_type -> ticketwave.inventory.v1.CreateEventResponse
-	5,  // 11: ticketwave.inventory.v1.InventoryService.ListSeats:output_type -> ticketwave.inventory.v1.ListSeatsResponse
-	7,  // 12: ticketwave.inventory.v1.InventoryService.ReserveSeats:output_type -> ticketwave.inventory.v1.ReserveSeatsResponse
-	9,  // 13: ticketwave.inventory.v1.InventoryService.ConfirmSeats:output_type -> ticketwave.inventory.v1.ConfirmSeatsResponse
-	11, // 14: ticketwave.inventory.v1.InventoryService.ReleaseSeats:output_type -> ticketwave.inventory.v1.ReleaseSeatsResponse
-	10, // [10:15] is the sub-list for method output_type
-	5,  // [5:10] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	17, // 1: ticketwave.inventory.v1.Event.created_at:type_name -> google.protobuf.Timestamp
+	2,  // 2: ticketwave.inventory.v1.GetEventResponse.event:type_name -> ticketwave.inventory.v1.Event
+	2,  // 3: ticketwave.inventory.v1.ListEventsResponse.events:type_name -> ticketwave.inventory.v1.Event
+	1,  // 4: ticketwave.inventory.v1.ListSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
+	1,  // 5: ticketwave.inventory.v1.ReserveSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
+	1,  // 6: ticketwave.inventory.v1.ConfirmSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
+	1,  // 7: ticketwave.inventory.v1.ReleaseSeatsResponse.seats:type_name -> ticketwave.inventory.v1.Seat
+	7,  // 8: ticketwave.inventory.v1.InventoryService.CreateEvent:input_type -> ticketwave.inventory.v1.CreateEventRequest
+	3,  // 9: ticketwave.inventory.v1.InventoryService.GetEvent:input_type -> ticketwave.inventory.v1.GetEventRequest
+	5,  // 10: ticketwave.inventory.v1.InventoryService.ListEvents:input_type -> ticketwave.inventory.v1.ListEventsRequest
+	9,  // 11: ticketwave.inventory.v1.InventoryService.ListSeats:input_type -> ticketwave.inventory.v1.ListSeatsRequest
+	11, // 12: ticketwave.inventory.v1.InventoryService.ReserveSeats:input_type -> ticketwave.inventory.v1.ReserveSeatsRequest
+	13, // 13: ticketwave.inventory.v1.InventoryService.ConfirmSeats:input_type -> ticketwave.inventory.v1.ConfirmSeatsRequest
+	15, // 14: ticketwave.inventory.v1.InventoryService.ReleaseSeats:input_type -> ticketwave.inventory.v1.ReleaseSeatsRequest
+	8,  // 15: ticketwave.inventory.v1.InventoryService.CreateEvent:output_type -> ticketwave.inventory.v1.CreateEventResponse
+	4,  // 16: ticketwave.inventory.v1.InventoryService.GetEvent:output_type -> ticketwave.inventory.v1.GetEventResponse
+	6,  // 17: ticketwave.inventory.v1.InventoryService.ListEvents:output_type -> ticketwave.inventory.v1.ListEventsResponse
+	10, // 18: ticketwave.inventory.v1.InventoryService.ListSeats:output_type -> ticketwave.inventory.v1.ListSeatsResponse
+	12, // 19: ticketwave.inventory.v1.InventoryService.ReserveSeats:output_type -> ticketwave.inventory.v1.ReserveSeatsResponse
+	14, // 20: ticketwave.inventory.v1.InventoryService.ConfirmSeats:output_type -> ticketwave.inventory.v1.ConfirmSeatsResponse
+	16, // 21: ticketwave.inventory.v1.InventoryService.ReleaseSeats:output_type -> ticketwave.inventory.v1.ReleaseSeatsResponse
+	15, // [15:22] is the sub-list for method output_type
+	8,  // [8:15] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_ticketwave_inventory_v1_inventory_proto_init() }
@@ -751,7 +1037,7 @@ func file_ticketwave_inventory_v1_inventory_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ticketwave_inventory_v1_inventory_proto_rawDesc), len(file_ticketwave_inventory_v1_inventory_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

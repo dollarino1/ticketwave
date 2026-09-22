@@ -19,6 +19,10 @@ message CreateOrderRequest {
   string event_id = 2;
   repeated string seat_ids = 3;
   int64 amount_cents = 4;
+  // Optional. A client-chosen token that makes a retry of the SAME request safe: a second
+  // CreateOrder with the same key from the same user returns the first one's outcome
+  // instead of creating another order. Reusing a key for a DIFFERENT request is an error.
+  string idempotency_key = 5;
 }
 
 message CreateOrderResponse {

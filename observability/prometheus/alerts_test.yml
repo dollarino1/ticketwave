@@ -1,0 +1,102 @@
+# Unit tests for alerts.yml. promtool feeds these synthetic series to the rules and
+# checks exactly which alerts fire, so a change to a threshold or an expression is
+# caught here instead of on the night the alert is needed:
+#   promtool test rules alerts_test.yml
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    name: a publisher that stopped is caught, a healthy one is not
+    input_series:
+      # order's outbox: the oldest row ages one minute per minute (publisher dead)
+      - series: 'ticketwave_outbox_oldest_unpublished_age_seconds{job="order",table="outbox"}'
+        values: "0 0 30 90 150 210 270 330"
+      # inventory's outbox: always fresh
+      - series: 'ticketwave_outbox_oldest_unpublished_age_seconds{job="inventory",table="outbox"}'
+        values: "0 1 0 2 0 1 0 0"
+    alert_rule_test:
+      - eval_time: 3m # over the threshold for only one minute so far: not yet
+        alertname: OutboxStuck
+        exp_alerts: []
+      - eval_time: 6m # over 60s for 3 minutes, past the 2 minute "for"
+        alertname: OutboxStuck
+        exp_alerts:
+          - exp_labels: { severity: page, job: order, table: outbox }
+            exp_annotations:
+              summary: "order's outbox has held an event for over a minute"
+              description: "The publisher is down or Kafka is unreachable. Emails, analytics and the live seat map are all stale."
+
+  - interval: 1m
+    name: a brief spike does not page
+    input_series:
+      - series: 'ticketwave_outbox_oldest_unpublished_age_seconds{job="order",table="outbox"}'
+        values: "0 0 120 0 0 0 0"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: OutboxStuck
+        exp_alerts: []
+
+  - interval: 1m
+    name: a service that stops answering is reported
+    input_series:
+      - series: 'up{job="gateway"}'
+        values: "1 1 0 0 0 0"
+      - series: 'up{job="auth"}'
+        values: "1 1 1 1 1 1"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: ServiceDown
+        exp_alerts:
+          - exp_labels: { severity: page, job: gateway }
+            exp_annotations:
+              summary: "gateway is not answering its metrics endpoint"
+
+  - interval: 1m
+    name: any dead-lettered message raises a ticket, none does not
+    input_series:
+      - series: 'ticketwave_kafka_consumer_messages_total{group="analytics",topic="order-events",result="dead_lettered"}'
+        values: "0 0 0 1 1 1 1 1 1 1"
+      - series: 'ticketwave_kafka_consumer_messages_total{group="notification",topic="order-events",result="dead_lettered"}'
+        values: "0 0 0 0 0 0 0 0 0 0"
+      - series: 'ticketwave_kafka_consumer_messages_total{group="notification",topic="order-events",result="handled"}'
+        values: "0 10 20 30 40 50 60 70 80 90"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: MessagesDeadLettered
+        exp_alerts:
+          - exp_labels: { severity: ticket, group: analytics, topic: order-events, result: dead_lettered }
+            exp_annotations:
+              summary: "analytics dead-lettered messages in the last 10 minutes"
+
+  - interval: 1m
+    name: gateway 5xx ratio above 5 percent for 5 minutes pages
+    input_series:
+      - series: 'ticketwave_http_requests_total{route="POST /api/orders",method="POST",code="200"}'
+        values: "0+90x12"
+      - series: 'ticketwave_http_requests_total{route="POST /api/orders",method="POST",code="500"}'
+        values: "0+10x12"
+    alert_rule_test:
+      - eval_time: 3m # 10% errors, but not for 5 minutes yet
+        alertname: GatewayServerErrors
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: GatewayServerErrors
+        exp_alerts:
+          - exp_labels: { severity: page }
+            exp_annotations:
+              summary: "More than 5% of gateway requests are failing with a 5xx"
+
+  - interval: 1m
+    name: healthy error ratio stays quiet
+    input_series:
+      - series: 'ticketwave_http_requests_total{route="GET /api/events",method="GET",code="200"}'
+        values: "0+99x12"
+      - series: 'ticketwave_http_requests_total{route="GET /api/events",method="GET",code="500"}'
+        values: "0+1x12"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GatewayServerErrors
+        exp_alerts: []

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package ticketwave.analytics.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// AnalyticsService is the read side of a CQRS split. Nothing here writes: the
+// numbers are a projection, rebuilt at any time by replaying order-events.
+service AnalyticsService {
+  rpc GetEventStats(GetEventStatsRequest) returns (GetEventStatsResponse);
+  // ListEventStats returns the events with the most revenue first.
+  rpc ListEventStats(ListEventStatsRequest) returns (ListEventStatsResponse);
+}
+
+message EventStats {
+  string event_id = 1;
+  int64 tickets_sold = 2;
+  int64 revenue_cents = 3;
+  int64 orders_confirmed = 4;
+  int64 orders_failed = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message GetEventStatsRequest {
+  string event_id = 1;
+}
+
+message GetEventStatsResponse {
+  EventStats stats = 1;
+}
+
+message ListEventStatsRequest {
+  // Default 20, capped at 100.
+  int32 limit = 1;
+}
+
+message ListEventStatsResponse {
+  repeated EventStats stats = 1;
+}

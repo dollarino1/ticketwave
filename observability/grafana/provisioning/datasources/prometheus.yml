@@ -1,0 +1,10 @@
+# Provisioned as code so a fresh Grafana comes up already wired, and the setup is
+# reviewable in git instead of being clicked together in a UI and lost.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true

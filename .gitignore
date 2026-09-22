@@ -17,3 +17,5 @@ Thumbs.db
 .env.notification
 .env.analytics
 certs/private.pem
+.env.gateway
+

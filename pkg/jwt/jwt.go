@@ -11,6 +11,7 @@ import (
 type Claims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -22,8 +23,17 @@ func NewSigner(privateKey *rsa.PrivateKey) *Signer {
 	return &Signer{privateKey: privateKey}
 }
 
-func (signer *Signer) Sign(userID, email string, ttl time.Duration) (string, error) {
-	claims := Claims{UserID: userID, Email: email, RegisteredClaims: jwt.RegisteredClaims{IssuedAt: jwt.NewNumericDate(time.Now()), ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl))}}
+func (signer *Signer) Sign(userID, email, role string, ttl time.Duration) (string, error) {
+	now := time.Now()
+	claims := Claims{
+		UserID: userID,
+		Email:  email,
+		Role:   role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+		},
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	tokenString, err := token.SignedString(signer.privateKey)
 	if err != nil {

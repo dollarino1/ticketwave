@@ -1,0 +1,31 @@
+# Keeps dependencies current with small, reviewable pull requests instead of one
+# painful upgrade every year. CI runs on each one, so a bump that breaks something
+# shows up as a red check rather than as a surprise in production.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      # Minor and patch bumps arrive together; a major bump gets its own PR.
+      go-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule: { interval: weekly }
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly }
+
+  - package-ecosystem: docker
+    directory: /web
+    schedule: { interval: weekly }
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

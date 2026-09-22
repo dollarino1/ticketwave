@@ -123,6 +123,7 @@ func NewConsumer(cfg ConsumerConfig, h Handler) (*Consumer, error) {
 
 func newConsumer(cfg ConsumerConfig, r reader, h Handler) *Consumer {
 	cfg.applyDefaults()
+	initMetrics(cfg.Topic, cfg.GroupID)
 	return &Consumer{cfg: cfg, r: r, handler: h}
 }
 
@@ -209,6 +210,7 @@ func (c *Consumer) handleOne(ctx context.Context, km kafkago.Message) error {
 	for attempts < c.cfg.MaxAttempts {
 		attempts++
 		if err = c.handler(ctx, msg); err == nil {
+			c.count(msg.Topic, resultHandled)
 			return nil
 		}
 		if ctx.Err() != nil {
@@ -223,6 +225,7 @@ func (c *Consumer) handleOne(ctx context.Context, km kafkago.Message) error {
 			c.cfg.GroupID, msg.Topic, msg.Partition, msg.Offset, attempts, c.cfg.MaxAttempts, err)
 
 		if attempts < c.cfg.MaxAttempts {
+			c.count(msg.Topic, resultRetried)
 			t := time.NewTimer(c.cfg.RetryBackoff * time.Duration(attempts))
 			select {
 			case <-t.C:
@@ -250,6 +253,7 @@ func (c *Consumer) deadLetter(ctx context.Context, msg Message, attempts int, ca
 	if err := c.cfg.DLQ.Publish(ctx, dead); err != nil {
 		return fmt.Errorf("dead-letter %s[%d]@%d: %w", msg.Topic, msg.Partition, msg.Offset, err)
 	}
+	c.count(msg.Topic, resultDeadLettered)
 	log.Printf("kafka consumer %s: %s[%d]@%d dead-lettered after %d attempt(s): %v",
 		c.cfg.GroupID, msg.Topic, msg.Partition, msg.Offset, attempts, cause)
 	return nil

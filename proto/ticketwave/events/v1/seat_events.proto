@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package ticketwave.events.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// SeatEvent is the only message type on the seat-events topic. It says that some
+// seats of one event just entered a state, so a live seat map can repaint them
+// without asking inventory-svc anything.
+//
+// Kafka key = event_id, so all changes to one event's seats stay in order. As with
+// order events, delivery is at-least-once: a duplicate carries the same state and
+// applying it twice is harmless, so consumers need no dedupe.
+message SeatEvent {
+  string message_id = 1;
+  google.protobuf.Timestamp occurred_at = 2;
+  string event_id = 3;
+  repeated string seat_ids = 4;
+  SeatState state = 5;
+}
+
+// SeatState is deliberately its own enum rather than inventory's SeatStatus, so
+// that consumers of this topic do not depend on inventory-svc's API package.
+enum SeatState {
+  SEAT_STATE_UNSPECIFIED = 0;
+  SEAT_STATE_AVAILABLE = 1;
+  SEAT_STATE_HELD = 2;
+  SEAT_STATE_SOLD = 3;
+}

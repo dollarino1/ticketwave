@@ -51,3 +51,40 @@ func EventTypeName(t eventsv1.OrderEventType) string {
 		return "order.unknown"
 	}
 }
+
+const TopicSeatEvents = "seat-events"
+
+// EncodeSeatEvent writes the event as protobuf-JSON, for the same reasons as
+// EncodeOrderEvent: the outbox column is JSONB and kafka-ui can show it.
+func EncodeSeatEvent(e *eventsv1.SeatEvent) ([]byte, error) {
+	b, err := protojson.Marshal(e)
+	if err != nil {
+		return nil, fmt.Errorf("encode seat event: %w", err)
+	}
+	return b, nil
+}
+
+// DecodeSeatEvent discards unknown fields so that adding a field to the event
+// does not break consumers that have not been redeployed yet.
+func DecodeSeatEvent(b []byte) (*eventsv1.SeatEvent, error) {
+	var e eventsv1.SeatEvent
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(b, &e); err != nil {
+		return nil, fmt.Errorf("decode seat event: %w", err)
+	}
+	return &e, nil
+}
+
+// SeatStateName is the plain word used in the event-type header and, later, on the
+// wire to browsers: "available", "held" or "sold".
+func SeatStateName(s eventsv1.SeatState) string {
+	switch s {
+	case eventsv1.SeatState_SEAT_STATE_AVAILABLE:
+		return "available"
+	case eventsv1.SeatState_SEAT_STATE_HELD:
+		return "held"
+	case eventsv1.SeatState_SEAT_STATE_SOLD:
+		return "sold"
+	default:
+		return "unknown"
+	}
+}

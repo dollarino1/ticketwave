@@ -2,8 +2,13 @@ syntax = "proto3";
 
 package ticketwave.inventory.v1;
 
+import "google/protobuf/timestamp.proto";
+
 service InventoryService {
   rpc CreateEvent(CreateEventRequest) returns (CreateEventResponse);
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse);
+  // ListEvents returns the newest events first, with how many seats are left.
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse);
   rpc ListSeats(ListSeatsRequest) returns (ListSeatsResponse);
   rpc ReserveSeats(ReserveSeatsRequest) returns (ReserveSeatsResponse);
   rpc ConfirmSeats(ConfirmSeatsRequest) returns (ConfirmSeatsResponse);
@@ -22,6 +27,31 @@ message Seat {
   string event_id = 2;
   string label = 3;
   SeatStatus status = 4;
+}
+
+message Event {
+  string id = 1;
+  string name = 2;
+  int32 total_seats = 3;
+  int32 available_seats = 4;
+  google.protobuf.Timestamp created_at = 5;
+}
+
+message GetEventRequest {
+  string event_id = 1;
+}
+
+message GetEventResponse {
+  Event event = 1;
+}
+
+message ListEventsRequest {
+  // Default 50, capped at 200.
+  int32 limit = 1;
+}
+
+message ListEventsResponse {
+  repeated Event events = 1;
 }
 
 message CreateEventRequest {

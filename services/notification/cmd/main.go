@@ -11,6 +11,7 @@ import (
 	"github.com/dollarino1/ticketwave/pkg/config"
 	"github.com/dollarino1/ticketwave/pkg/events"
 	"github.com/dollarino1/ticketwave/pkg/kafka"
+	"github.com/dollarino1/ticketwave/pkg/observability"
 	"github.com/dollarino1/ticketwave/pkg/redis"
 	appconfig "github.com/dollarino1/ticketwave/services/notification/internal/config"
 	"github.com/dollarino1/ticketwave/services/notification/internal/dedup"
@@ -35,6 +36,15 @@ func run() error {
 	// ctx is cancelled by Ctrl+C or SIGTERM, which stops the consumer cleanly.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	logger := observability.SetupLogging("notification")
+	observability.StartMetrics(ctx, cfg.MetricsAddr, logger)
+
+	shutdownTracing, err := observability.SetupTracing(ctx, "notification", cfg.TracingEndpoint)
+	if err != nil {
+		return fmt.Errorf("setup tracing: %w", err)
+	}
+	defer func() { _ = shutdownTracing(context.Background()) }()
 
 	redisClient, err := redis.New(ctx, cfg.RedisAddr)
 	if err != nil {

@@ -79,8 +79,8 @@ func compose(ev *eventsv1.OrderEvent) (email.Email, bool) {
 		return email.Email{
 			To:      ev.GetUserId(),
 			Subject: "We couldn't complete your order",
-			Body: fmt.Sprintf("Order %s was not completed because %s. You have not been charged.",
-				ev.GetOrderId(), reasonText(ev.GetFailureReason())),
+			Body: fmt.Sprintf("Order %s was not completed because %s. %s",
+				ev.GetOrderId(), reasonText(ev.GetFailureReason()), chargeNote(ev.GetFailureReason())),
 		}, true
 	default:
 		return email.Email{}, false
@@ -93,8 +93,23 @@ func reasonText(r eventsv1.OrderFailureReason) string {
 		return "the seats are no longer available"
 	case eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_PAYMENT_DECLINED:
 		return "your payment was declined"
+	case eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_SERVICE_UNAVAILABLE:
+		return "one of our services was temporarily unavailable"
 	default:
 		return "of an unexpected problem"
+	}
+}
+
+// chargeNote must never promise more than we know. After a refusal we know
+// nothing was charged. After a breakdown we do not: the payment may have gone
+// through just before the failure, so the customer is told what to do instead.
+func chargeNote(r eventsv1.OrderFailureReason) string {
+	switch r {
+	case eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_SEATS_UNAVAILABLE,
+		eventsv1.OrderFailureReason_ORDER_FAILURE_REASON_PAYMENT_DECLINED:
+		return "You have not been charged."
+	default:
+		return "Please try again. If you see a charge for this order, contact support and we will refund it."
 	}
 }
 

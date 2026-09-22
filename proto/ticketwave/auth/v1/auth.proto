@@ -6,6 +6,9 @@ service AuthService {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
+  // Logout revokes one refresh token. It is idempotent and says nothing about
+  // whether the token existed.
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
 }
 
 message RegisterRequest {
@@ -26,6 +29,9 @@ message LoginResponse {
   string access_token = 1;
   string refresh_token = 2;
   int64 expires_in = 3;
+  string user_id = 4;
+  string email = 5;
+  string role = 6;
 }
 
 message RefreshRequest {
@@ -36,4 +42,13 @@ message RefreshResponse {
   string access_token = 1;
   string refresh_token = 2;
   int64 expires_in = 3;
+  string user_id = 4;
+  string email = 5;
+  string role = 6;
 }
+
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+message LogoutResponse {}

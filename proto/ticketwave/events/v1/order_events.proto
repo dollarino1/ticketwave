@@ -35,4 +35,7 @@ enum OrderFailureReason {
   ORDER_FAILURE_REASON_UNSPECIFIED = 0;
   ORDER_FAILURE_REASON_SEATS_UNAVAILABLE = 1;
   ORDER_FAILURE_REASON_PAYMENT_DECLINED = 2;
+  // A service the saga depends on broke or timed out. Unlike the two reasons
+  // above this is not a decision about the order, and the customer should retry.
+  ORDER_FAILURE_REASON_SERVICE_UNAVAILABLE = 3;
 }

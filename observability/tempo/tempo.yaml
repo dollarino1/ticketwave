@@ -1,0 +1,31 @@
+# Minimal single-binary Tempo: one process is receiver, storage and query all at
+# once. Fine for this project's traffic; a real deployment splits those into
+# separately-scaled components.
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        # Only gRPC is enabled: it is what pkg/observability.SetupTracing exports
+        # with. The HTTP receiver is left off rather than opened and unused.
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  # A trace usually finishes well under this; it only matters for a stream so long
+  # (or so quiet) that Tempo would otherwise wait indefinitely to consider it done.
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 24h # a demo project's traces are not worth keeping longer
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal

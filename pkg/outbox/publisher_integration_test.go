@@ -6,66 +6,26 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
+	"math"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/dollarino1/ticketwave/pkg/events"
 	"github.com/dollarino1/ticketwave/pkg/kafka"
+	"github.com/dollarino1/ticketwave/pkg/pgtest"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
-// newTestPool returns a pool whose search_path is a private schema holding freshly
-// migrated copies of the order tables. Tests therefore never read, and above all
-// never mark as published, rows that belong to real development data.
-//
-// Run with ORDER_DATABASE_URL pointing at the orders database, e.g.
-//
-//	ORDER_DATABASE_URL="postgres://ticketwave:ticketwave@localhost:5433/orders?sslmode=disable" \
-//	  go test -tags integration ./services/order/internal/outbox/
+// newTestPool returns a pool on a private, freshly migrated schema, so tests
+// never read, and above all never mark as published, rows that belong to real
+// development data. Run with ORDER_DATABASE_URL pointing at the orders database.
 func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	url := os.Getenv("ORDER_DATABASE_URL")
-	if url == "" {
-		t.Skip("ORDER_DATABASE_URL not set")
-	}
-	ctx := context.Background()
-
-	admin, err := pgxpool.New(ctx, url)
-	must(t, err)
-	schema := "outbox_test_" + strings.ReplaceAll(uuid.NewString()[:8], "-", "")
-	_, err = admin.Exec(ctx, "CREATE SCHEMA "+schema)
-	must(t, err)
-	t.Cleanup(func() {
-		_, _ = admin.Exec(ctx, "DROP SCHEMA "+schema+" CASCADE")
-		admin.Close()
-	})
-
-	cfg, err := pgxpool.ParseConfig(url)
-	must(t, err)
-	cfg.ConnConfig.RuntimeParams["search_path"] = schema
-	pool, err := pgxpool.NewWithConfig(ctx, cfg)
-	must(t, err)
-	t.Cleanup(pool.Close)
-
-	files, err := filepath.Glob("../../../../migrations/order/*.up.sql")
-	must(t, err)
-	if len(files) == 0 {
-		t.Fatal("found no migrations under migrations/order")
-	}
-	sort.Strings(files)
-	for _, f := range files {
-		sql, err := os.ReadFile(f)
-		must(t, err)
-		_, err = pool.Exec(ctx, string(sql))
-		must(t, err)
-	}
-	return pool
+	return pgtest.NewPool(t, "ORDER_DATABASE_URL", "migrations/order")
 }
 
 func must(t *testing.T, err error) {
@@ -138,7 +98,9 @@ func (r *recorder) setErr(err error) {
 }
 
 func newTestPublisher(pool *pgxpool.Pool, out kafka.Publisher) *Publisher {
-	return &Publisher{pool: pool, out: out, interval: 10 * time.Millisecond, batch: 100}
+	p := NewPublisher(pool, out, Table{Name: "outbox", KeyColumn: "order_id"})
+	p.interval = 10 * time.Millisecond
+	return p
 }
 
 func TestPublishBatch_SendsInCreationOrderAndMarksPublished(t *testing.T) {
@@ -289,5 +251,99 @@ func TestRun_PicksUpNewRowsAndStopsOnCancel(t *testing.T) {
 	case <-done:
 	case <-time.After(2 * time.Second):
 		t.Fatal("Run did not return within 2s of cancellation")
+	}
+}
+
+// gaugeValues gathers the backlog collector from its own registry, so the test sees
+// exactly what a Prometheus scrape would.
+func gaugeValues(t *testing.T, pool *pgxpool.Pool) (depth, age float64) {
+	t.Helper()
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(newBacklogCollector(pool, Table{Name: "outbox", KeyColumn: "order_id"}))
+	families, err := reg.Gather()
+	if err != nil {
+		t.Fatalf("scrape failed: %v", err)
+	}
+	for _, f := range families {
+		switch f.GetName() {
+		case "ticketwave_outbox_unpublished":
+			depth = f.GetMetric()[0].GetGauge().GetValue()
+		case "ticketwave_outbox_oldest_unpublished_age_seconds":
+			age = f.GetMetric()[0].GetGauge().GetValue()
+		}
+	}
+	return depth, age
+}
+
+func TestBacklogMetrics_ReportDepthAndTheAgeOfTheOldestRow(t *testing.T) {
+	pool := newTestPool(t)
+	seed(t, pool, 5) // created between an hour and an hour minus 4 seconds ago
+
+	depth, age := gaugeValues(t, pool)
+
+	if depth != 5 {
+		t.Errorf("depth = %v, want 5", depth)
+	}
+	if age < 3590 || age > 3700 {
+		t.Errorf("oldest age = %vs, want about an hour: alerting on this is how a dead publisher is noticed", age)
+	}
+}
+
+func TestBacklogMetrics_DropToZeroOnceEverythingIsPublished(t *testing.T) {
+	pool := newTestPool(t)
+	seed(t, pool, 3)
+	p := newTestPublisher(pool, &recorder{})
+
+	if _, err := p.publishBatch(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	depth, age := gaugeValues(t, pool)
+	if depth != 0 || age != 0 {
+		t.Errorf("depth/age = %v/%v after publishing everything, want 0/0", depth, age)
+	}
+}
+
+// The database being down must not take the whole /metrics endpoint with it.
+func TestBacklogMetrics_ADatabaseErrorIsNaNNotAFailedScrape(t *testing.T) {
+	pool := newTestPool(t)
+	pool.Close()
+
+	depth, age := gaugeValues(t, pool) // Gather must not error, or gaugeValues fails the test
+
+	if !math.IsNaN(depth) || !math.IsNaN(age) {
+		t.Errorf("depth/age = %v/%v with the database gone, want NaN/NaN", depth, age)
+	}
+}
+
+func TestPublishBatch_CountsWhatItSent(t *testing.T) {
+	pool := newTestPool(t)
+	seed(t, pool, 4)
+	p := newTestPublisher(pool, &recorder{})
+	before := testutil.ToFloat64(publishedTotal.WithLabelValues("outbox"))
+
+	if _, err := p.publishBatch(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := testutil.ToFloat64(publishedTotal.WithLabelValues("outbox")) - before; got != 4 {
+		t.Errorf("published counter rose by %v, want 4", got)
+	}
+}
+
+func TestPublishBatch_DoesNotCountAFailedSend(t *testing.T) {
+	pool := newTestPool(t)
+	seed(t, pool, 4)
+	rec := &recorder{}
+	rec.setErr(errors.New("kafka down"))
+	p := newTestPublisher(pool, rec)
+	before := testutil.ToFloat64(publishedTotal.WithLabelValues("outbox"))
+
+	if _, err := p.publishBatch(context.Background()); err == nil {
+		t.Fatal("publishBatch succeeded although Kafka refused")
+	}
+
+	if got := testutil.ToFloat64(publishedTotal.WithLabelValues("outbox")) - before; got != 0 {
+		t.Errorf("published counter rose by %v for a failed send, want 0", got)
 	}
 }

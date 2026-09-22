@@ -80,6 +80,9 @@ const (
 	OrderFailureReason_ORDER_FAILURE_REASON_UNSPECIFIED       OrderFailureReason = 0
 	OrderFailureReason_ORDER_FAILURE_REASON_SEATS_UNAVAILABLE OrderFailureReason = 1
 	OrderFailureReason_ORDER_FAILURE_REASON_PAYMENT_DECLINED  OrderFailureReason = 2
+	// A service the saga depends on broke or timed out. Unlike the two reasons
+	// above this is not a decision about the order, and the customer should retry.
+	OrderFailureReason_ORDER_FAILURE_REASON_SERVICE_UNAVAILABLE OrderFailureReason = 3
 )
 
 // Enum value maps for OrderFailureReason.
@@ -88,11 +91,13 @@ var (
 		0: "ORDER_FAILURE_REASON_UNSPECIFIED",
 		1: "ORDER_FAILURE_REASON_SEATS_UNAVAILABLE",
 		2: "ORDER_FAILURE_REASON_PAYMENT_DECLINED",
+		3: "ORDER_FAILURE_REASON_SERVICE_UNAVAILABLE",
 	}
 	OrderFailureReason_value = map[string]int32{
-		"ORDER_FAILURE_REASON_UNSPECIFIED":       0,
-		"ORDER_FAILURE_REASON_SEATS_UNAVAILABLE": 1,
-		"ORDER_FAILURE_REASON_PAYMENT_DECLINED":  2,
+		"ORDER_FAILURE_REASON_UNSPECIFIED":         0,
+		"ORDER_FAILURE_REASON_SEATS_UNAVAILABLE":   1,
+		"ORDER_FAILURE_REASON_PAYMENT_DECLINED":    2,
+		"ORDER_FAILURE_REASON_SERVICE_UNAVAILABLE": 3,
 	}
 )
 
@@ -261,11 +266,12 @@ const file_ticketwave_events_v1_order_events_proto_rawDesc = "" +
 	"\x1cORDER_EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18ORDER_EVENT_TYPE_CREATED\x10\x01\x12\x1e\n" +
 	"\x1aORDER_EVENT_TYPE_CONFIRMED\x10\x02\x12\x1b\n" +
-	"\x17ORDER_EVENT_TYPE_FAILED\x10\x03*\x91\x01\n" +
+	"\x17ORDER_EVENT_TYPE_FAILED\x10\x03*\xbf\x01\n" +
 	"\x12OrderFailureReason\x12$\n" +
 	" ORDER_FAILURE_REASON_UNSPECIFIED\x10\x00\x12*\n" +
 	"&ORDER_FAILURE_REASON_SEATS_UNAVAILABLE\x10\x01\x12)\n" +
-	"%ORDER_FAILURE_REASON_PAYMENT_DECLINED\x10\x02B\xe2\x01\n" +
+	"%ORDER_FAILURE_REASON_PAYMENT_DECLINED\x10\x02\x12,\n" +
+	"(ORDER_FAILURE_REASON_SERVICE_UNAVAILABLE\x10\x03B\xe2\x01\n" +
 	"\x18com.ticketwave.events.v1B\x10OrderEventsProtoP\x01ZBgithub.com/dollarino1/ticketwave/gen/ticketwave/events/v1;eventsv1\xa2\x02\x03TEX\xaa\x02\x14Ticketwave.Events.V1\xca\x02\x14Ticketwave\\Events\\V1\xe2\x02 Ticketwave\\Events\\V1\\GPBMetadata\xea\x02\x16Ticketwave::Events::V1b\x06proto3"
 
 var (

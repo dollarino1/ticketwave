@@ -74,13 +74,17 @@ func (OrderStatus) EnumDescriptor() ([]byte, []int) {
 }
 
 type CreateOrderRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	EventId       string                 `protobuf:"bytes,2,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
-	SeatIds       []string               `protobuf:"bytes,3,rep,name=seat_ids,json=seatIds,proto3" json:"seat_ids,omitempty"`
-	AmountCents   int64                  `protobuf:"varint,4,opt,name=amount_cents,json=amountCents,proto3" json:"amount_cents,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	UserId      string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	EventId     string                 `protobuf:"bytes,2,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	SeatIds     []string               `protobuf:"bytes,3,rep,name=seat_ids,json=seatIds,proto3" json:"seat_ids,omitempty"`
+	AmountCents int64                  `protobuf:"varint,4,opt,name=amount_cents,json=amountCents,proto3" json:"amount_cents,omitempty"`
+	// Optional. A client-chosen token that makes a retry of the SAME request safe: a second
+	// CreateOrder with the same key from the same user returns the first one's outcome
+	// instead of creating another order. Reusing a key for a DIFFERENT request is an error.
+	IdempotencyKey string `protobuf:"bytes,5,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CreateOrderRequest) Reset() {
@@ -139,6 +143,13 @@ func (x *CreateOrderRequest) GetAmountCents() int64 {
 		return x.AmountCents
 	}
 	return 0
+}
+
+func (x *CreateOrderRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
 }
 
 type CreateOrderResponse struct {
@@ -325,12 +336,13 @@ var File_ticketwave_order_v1_order_proto protoreflect.FileDescriptor
 
 const file_ticketwave_order_v1_order_proto_rawDesc = "" +
 	"\n" +
-	"\x1fticketwave/order/v1/order.proto\x12\x13ticketwave.order.v1\"\x86\x01\n" +
+	"\x1fticketwave/order/v1/order.proto\x12\x13ticketwave.order.v1\"\xaf\x01\n" +
 	"\x12CreateOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x19\n" +
 	"\bevent_id\x18\x02 \x01(\tR\aeventId\x12\x19\n" +
 	"\bseat_ids\x18\x03 \x03(\tR\aseatIds\x12!\n" +
-	"\famount_cents\x18\x04 \x01(\x03R\vamountCents\"j\n" +
+	"\famount_cents\x18\x04 \x01(\x03R\vamountCents\x12'\n" +
+	"\x0fidempotency_key\x18\x05 \x01(\tR\x0eidempotencyKey\"j\n" +
 	"\x13CreateOrderResponse\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x128\n" +
 	"\x06status\x18\x02 \x01(\x0e2 .ticketwave.order.v1.OrderStatusR\x06status\",\n" +
