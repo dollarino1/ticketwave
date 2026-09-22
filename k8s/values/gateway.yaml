@@ -1,0 +1,24 @@
+image: microservices-gateway:latest
+containerPort: 8081
+metricsPort: 9107
+config:
+  HTTP_ADDR: ":8081"
+  METRICS_ADDR: ":9107"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+  AUTH_ADDR: auth:50051
+  INVENTORY_ADDR: inventory:50052
+  ORDER_ADDR: order:50054
+  ANALYTICS_ADDR: analytics:50056
+  REDIS_ADDR: redis:6379
+  JWT_PUBLIC_KEY_PATH: certs/public.pem
+  SEAT_PRICE_CENTS: "5000"
+  COOKIE_SECURE: "false"
+  TRUST_PROXY_HEADERS: "false"
+  REQUEST_TIMEOUT: 8s
+secretFile:
+  name: jwt-keys
+  mountPath: /app/certs
+  key: public.pem
+  path: public.pem
+readinessPath: /healthz
+livenessPath: /healthz

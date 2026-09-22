@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topics
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-kafka
+          image: apache/kafka:4.3.1
+          command:
+            - bash
+            - -c
+            - |
+              until echo > /dev/tcp/kafka/9092; do
+                echo "waiting for kafka:9092"
+                sleep 2
+              done
+      containers:
+        - name: create-topics
+          image: apache/kafka:4.3.1
+          command:
+            - bash
+            - -c
+            - |
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic order-events --partitions 3 --replication-factor 1
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic order-events.dlq --partitions 1 --replication-factor 1
+              /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 \
+                --create --if-not-exists --topic seat-events --partitions 1 --replication-factor 1
+  backoffLimit: 3

@@ -1,0 +1,9 @@
+image: ""
+imagePullPolicy: IfNotPresent
+containerPort: 8080
+metricsPort: 9101
+config: {}
+secret: {}
+secretFile: {}
+readinessPath: /healthz
+livenessPath: /healthz

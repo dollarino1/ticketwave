@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.metricsPort }}"
+        prometheus.io/path: /metrics
+    spec:
+      {{- if .Values.secretFile.name }}
+      volumes:
+        - name: secret-file
+          secret:
+            secretName: {{ .Values.secretFile.name }}
+            items:
+              - key: {{ .Values.secretFile.key }}
+                path: {{ .Values.secretFile.path }}
+      {{- end }}
+      containers:
+        - name: {{ .Release.Name }}
+          image: {{ .Values.image }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.containerPort }}
+            - containerPort: {{ .Values.metricsPort }}
+          {{- if .Values.secretFile.name }}
+          volumeMounts:
+            - name: secret-file
+              mountPath: {{ .Values.secretFile.mountPath }}
+              readOnly: true
+          {{- end }}
+          {{- if .Values.config }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-config
+          {{- end }}
+          {{- if .Values.secret }}
+          env:
+            {{- range $key, $value := .Values.secret }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Release.Name }}-secret
+                  key: {{ $key }}
+            {{- end }}
+          {{- end }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessPath }}
+              port: {{ .Values.metricsPort }}
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessPath }}
+              port: {{ .Values.metricsPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3

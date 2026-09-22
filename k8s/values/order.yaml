@@ -1,0 +1,12 @@
+image: microservices-order:latest
+containerPort: 50054
+metricsPort: 9104
+config:
+  GRPC_PORT: ":50054"
+  METRICS_ADDR: ":9104"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+  INVENTORY_ADDR: inventory:50052
+  PAYMENT_ADDR: payment:50053
+  KAFKA_BROKERS: kafka:9092
+secret:
+  DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/orders?sslmode=disable

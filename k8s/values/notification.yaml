@@ -1,0 +1,10 @@
+image: microservices-notification:latest
+containerPort: 9199
+metricsPort: 9105
+config:
+  METRICS_ADDR: ":9105"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+  KAFKA_BROKERS: kafka:9092
+  REDIS_ADDR: redis:6379
+  CONSUMER_GROUP: notification
+  CONCURRENCY: "4"

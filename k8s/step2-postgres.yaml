@@ -1,0 +1,48 @@
+# A Deployment describes DESIRED STATE: "I want this many copies of this pod
+# template running, always." Kubernetes' control loop constantly compares this
+# against reality and creates/kills pods to match — that reconciliation is the whole
+# mechanism behind "self-healing."
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 1 # a database is stateful; running >1 copy of THIS naive setup would
+              # mean two independent databases, not one shared one — replicas>1
+              # only makes sense for stateless services, which is most of ours
+  selector:
+    matchLabels:
+      app: postgres # tells the Deployment which pods belong to it
+  template: # the "cookie cutter" for every pod this Deployment creates
+    metadata:
+      labels:
+        app: postgres # must match selector.matchLabels above
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: ticketwave
+            - name: POSTGRES_PASSWORD
+              value: ticketwave # fine for this throwaway learning cluster; step 3
+                                # is exactly where we stop doing this
+            - name: POSTGRES_DB
+              value: payment
+---
+# A Service is a STABLE NAME + IP for a set of pods, chosen by the same label
+# selector mechanism as above. Pods come and go and get new IPs every time; a
+# Service's ClusterIP and DNS name never change, so nothing else in the cluster
+# ever needs to know a pod's actual IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres # routes traffic to any pod carrying this label
+  ports:
+    - port: 5432       # the port other pods use to reach this Service
+      targetPort: 5432 # the port the container actually listens on

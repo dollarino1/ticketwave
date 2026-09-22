@@ -1,0 +1,9 @@
+image: microservices-payment:latest
+containerPort: 50053
+metricsPort: 9103
+config:
+  GRPC_PORT: ":50053"
+  METRICS_ADDR: ":9103"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+secret:
+  DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/payment?sslmode=disable

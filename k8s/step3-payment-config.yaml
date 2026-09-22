@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-config
+data:
+  GRPC_PORT: ":50053"
+  METRICS_ADDR: ":9103"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-secret
+type: Opaque
+stringData:
+  DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/payment?sslmode=disable

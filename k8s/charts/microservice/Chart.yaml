@@ -1,0 +1,5 @@
+apiVersion: v2
+name: microservice
+description: Generic chart for one TicketWave Go service
+type: application
+version: 0.1.0

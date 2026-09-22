@@ -1,0 +1,9 @@
+image: microservices-realtime:latest
+containerPort: 8082
+metricsPort: 9108
+config:
+  HTTP_ADDR: ":8082"
+  METRICS_ADDR: ":9108"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+  KAFKA_BROKERS: kafka:9092
+  MAX_SUBSCRIBERS: "10000"

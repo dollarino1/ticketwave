@@ -1,0 +1,15 @@
+image: microservices-auth:latest
+containerPort: 50051
+metricsPort: 9101
+config:
+  GRPC_PORT: ":50051"
+  METRICS_ADDR: ":9101"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+  ORGANIZER_EMAILS: organizer@ticketwave.test
+secret:
+  DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/auth?sslmode=disable
+secretFile:
+  name: jwt-keys
+  mountPath: /app/certs
+  key: private.pem
+  path: private.pem

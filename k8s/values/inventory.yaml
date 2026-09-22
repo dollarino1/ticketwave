@@ -1,0 +1,11 @@
+image: microservices-inventory:latest
+containerPort: 50052
+metricsPort: 9102
+config:
+  GRPC_PORT: ":50052"
+  METRICS_ADDR: ":9102"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+  REDIS_ADDR: redis:6379
+  KAFKA_BROKERS: kafka:9092
+secret:
+  DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/inventory?sslmode=disable

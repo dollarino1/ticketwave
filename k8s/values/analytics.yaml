@@ -1,0 +1,12 @@
+image: microservices-analytics:latest
+containerPort: 50056
+metricsPort: 9106
+config:
+  GRPC_PORT: ":50056"
+  METRICS_ADDR: ":9106"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "off"
+  KAFKA_BROKERS: kafka:9092
+  CONSUMER_GROUP: analytics
+  CONCURRENCY: "1"
+secret:
+  DATABASE_URL: postgres://ticketwave:ticketwave@postgres:5432/analytics?sslmode=disable
