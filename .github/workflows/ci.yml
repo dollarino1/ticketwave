@@ -20,7 +20,7 @@ jobs:
     name: Protobuf
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # buf breaking compares against the base branch's history
       # protoc-gen-go and -grpc are Go programs, installed below and run by buf.
@@ -50,7 +50,7 @@ jobs:
     name: Go
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod # one place decides the Go version, for dev and CI alike
@@ -90,7 +90,7 @@ jobs:
     name: Dependency vulnerabilities
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
@@ -112,7 +112,7 @@ jobs:
     name: Prometheus rules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # promtool ships inside the Prometheus image. "check config" validates the
       # syntax of the scrape config and the alert rules; "test rules" runs
       # alerts_test.yml, which feeds synthetic series to each alert and asserts
@@ -133,7 +133,7 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -152,7 +152,7 @@ jobs:
     # nine images when the code does not even compile, so it waits for the cheap checks.
     needs: [go, web]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
