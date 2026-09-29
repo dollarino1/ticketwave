@@ -8,7 +8,7 @@
 # so there is no shell or package manager for an attacker to use, and far less for a
 # vulnerability scanner to flag.
 
-FROM golang:1.26-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 
 # Dependencies first, on their own layer: they change rarely, so Docker reuses this
